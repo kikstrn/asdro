@@ -3,6 +3,10 @@ import type {
   Viewport,
 } from "next";
 
+import {
+  ServiceWorkerRegister,
+} from "@/components/pwa/service-worker-register";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -27,16 +31,16 @@ export const metadata: Metadata = {
       },
       {
         url: "/icons/icon-192.png",
-        type: "image/png",
         sizes: "192x192",
+        type: "image/png",
       },
     ],
 
     apple: [
       {
         url: "/icons/apple-touch-icon.png",
-        type: "image/png",
         sizes: "180x180",
+        type: "image/png",
       },
     ],
   },
@@ -44,7 +48,8 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: "ASDRO Tennis",
-    statusBarStyle: "black-translucent",
+    statusBarStyle:
+      "black-translucent",
   },
 
   formatDetection: {
@@ -57,7 +62,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
 
-  themeColor: "#07110c",
+  themeColor:
+    "#07110c",
 };
 
 export default function RootLayout({
@@ -69,6 +75,8 @@ export default function RootLayout({
     <html lang="fr">
       <body>
         {children}
+
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

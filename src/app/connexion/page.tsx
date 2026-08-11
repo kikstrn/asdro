@@ -7,6 +7,10 @@ import {
 
 import { login } from "./actions";
 
+import {
+  PasswordInput,
+} from "@/components/auth/password-input";
+
 type PageProps = {
   searchParams: Promise<{
     error?: string;
@@ -131,14 +135,9 @@ export default async function LoginPage({
                 Mot de passe
               </label>
 
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
+              <PasswordInput
                 autoComplete="current-password"
                 placeholder="Votre mot de passe"
-                className="asdro-input"
               />
             </div>
 

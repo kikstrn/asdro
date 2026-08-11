@@ -5,6 +5,10 @@ import {
   UserPlus,
 } from "lucide-react";
 
+import {
+  PasswordInput,
+} from "@/components/auth/password-input";
+
 import { signup } from "./actions";
 
 type PageProps = {
@@ -191,15 +195,10 @@ export default async function SignupPage({
                     Mot de passe
                   </label>
 
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    minLength={8}
-                    required
+                  <PasswordInput
                     autoComplete="new-password"
                     placeholder="8 caractères minimum"
-                    className="asdro-input"
+                    minLength={8}
                   />
 
                   <p className="mt-2 text-xs leading-5 text-white/35">

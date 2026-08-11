@@ -1,45 +1,130 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import {
+  createServerClient,
+} from "@supabase/ssr";
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+import {
+  NextResponse,
+  type NextRequest,
+} from "next/server";
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
+export async function updateSession(
+  request: NextRequest
+) {
+  let supabaseResponse =
+    NextResponse.next({
+      request,
+    });
+
+  const supabase =
+    createServerClient(
+      process.env
+        .NEXT_PUBLIC_SUPABASE_URL!,
+
+      process.env
+        .NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+
+          setAll(
+            cookiesToSet,
+            headers
+          ) {
+            // ----------------------------------------------
+            // Met à jour les cookies de la requête
+            // ----------------------------------------------
+
+            cookiesToSet.forEach(
+              ({
+                name,
+                value,
+              }) => {
+                request.cookies.set(
+                  name,
+                  value
+                );
+              }
+            );
+
+            // ----------------------------------------------
+            // Recrée la réponse avec la requête mise à jour
+            // ----------------------------------------------
+
+            supabaseResponse =
+              NextResponse.next({
+                request,
+              });
+
+            // ----------------------------------------------
+            // Réinjecte les cookies Supabase dans la réponse
+            // ----------------------------------------------
+
+            cookiesToSet.forEach(
+              ({
+                name,
+                value,
+                options,
+              }) => {
+                supabaseResponse.cookies.set(
+                  name,
+                  value,
+                  options
+                );
+              }
+            );
+
+            // ----------------------------------------------
+            // IMPORTANT :
+            // Supabase SSR fournit notamment les headers
+            // anti-cache nécessaires.
+            // ----------------------------------------------
+
+            if (headers) {
+              Object.entries(
+                headers
+              ).forEach(
+                ([
+                  key,
+                  value,
+                ]) => {
+                  supabaseResponse.headers.set(
+                    key,
+                    value
+                  );
+                }
+              );
+            }
+          },
         },
+      }
+    );
 
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) => {
-            request.cookies.set(name, value);
-          });
+  // ==========================================================
+  // RAFRAÎCHISSEMENT / VALIDATION DE LA SESSION
+  // ==========================================================
 
-          supabaseResponse = NextResponse.next({
-            request,
-          });
+  const {
+    data,
+    error,
+  } =
+    await supabase.auth.getClaims();
 
-          cookiesToSet.forEach(({ name, value, options }) => {
-            supabaseResponse.cookies.set(name, value, options);
-          });
-        },
-      },
-    }
+  if (error) {
+    console.error(
+      "Supabase auth proxy error:",
+      error.message
+    );
+  }
+
+  console.log(
+    "Supabase proxy session:",
+    Boolean(
+      data?.claims
+    )
   );
-
-  /*
-   * Important :
-   * ne pas supprimer cet appel.
-   *
-   * Il permet à Supabase de vérifier / rafraîchir
-   * la session associée aux cookies.
-   */
-  await supabase.auth.getUser();
 
   return supabaseResponse;
 }

@@ -6,6 +6,8 @@ import {
   Settings,
 } from "lucide-react";
 
+import { logout } from "@/app/actions/auth";
+
 type AppHeaderProps = {
   firstName?: string;
   isAdmin?: boolean;
@@ -83,13 +85,15 @@ export function AppHeader({
               </Link>
             )}
 
-            <Link
-              href="/deconnexion"
-              className="asdro-button-secondary text-sm"
-            >
-              <LogOut className="h-4 w-4" />
-              Déconnexion
-            </Link>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="asdro-button-secondary text-sm"
+              >
+                <LogOut className="h-4 w-4" />
+                Déconnexion
+              </button>
+            </form>
           </nav>
 
           {/* MOBILE */}
@@ -120,15 +124,16 @@ export function AppHeader({
             )}
 
             {/* DÉCONNEXION */}
-
-            <Link
-              href="/deconnexion"
-              aria-label="Déconnexion"
-              title="Déconnexion"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-red-500/10 hover:text-red-400"
-            >
-              <LogOut className="h-5 w-5" />
-            </Link>
+            <form action={logout}>
+              <button
+                type="submit"
+                aria-label="Déconnexion"
+                title="Déconnexion"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-red-500/10 hover:text-red-400"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
+            </form>
           </nav>
         </div>
       </div>
