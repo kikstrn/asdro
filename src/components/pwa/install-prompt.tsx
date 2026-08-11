@@ -22,6 +22,40 @@ type BeforeInstallPromptEvent = Event & {
   }>;
 };
 
+function detectStandalone() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return (
+    window.matchMedia(
+      "(display-mode: standalone)"
+    ).matches ||
+    (
+      "standalone" in
+        window.navigator &&
+      (
+        window.navigator as Navigator & {
+          standalone?: boolean;
+        }
+      ).standalone === true
+    )
+  );
+}
+
+function detectIOS() {
+  if (
+    typeof navigator ===
+    "undefined"
+  ) {
+    return false;
+  }
+
+  return /iPad|iPhone|iPod/.test(
+    navigator.userAgent
+  );
+}
+
 export function InstallPrompt() {
   const [
     deferredPrompt,
@@ -32,46 +66,23 @@ export function InstallPrompt() {
     );
 
   const [
-    isIOS,
-    setIsIOS,
-  ] = useState(false);
-
-  const [
-    isStandalone,
-    setIsStandalone,
-  ] = useState(false);
-
-  const [
     dismissed,
     setDismissed,
   ] = useState(false);
 
+  const [
+    installed,
+    setInstalled,
+  ] = useState(false);
+
+  const isIOS =
+    detectIOS();
+
+  const isStandalone =
+    detectStandalone() ||
+    installed;
+
   useEffect(() => {
-    const standalone =
-      window.matchMedia(
-        "(display-mode: standalone)"
-      ).matches ||
-      (
-        "standalone" in
-        window.navigator &&
-        (
-          window.navigator as Navigator & {
-            standalone?: boolean;
-          }
-        ).standalone === true
-      );
-
-    setIsStandalone(
-      standalone
-    );
-
-    const ios =
-      /iPad|iPhone|iPod/.test(
-        navigator.userAgent
-      );
-
-    setIsIOS(ios);
-
     function handleBeforeInstallPrompt(
       event: Event
     ) {
@@ -87,7 +98,7 @@ export function InstallPrompt() {
         null
       );
 
-      setIsStandalone(
+      setInstalled(
         true
       );
     }
@@ -122,7 +133,15 @@ export function InstallPrompt() {
 
     await deferredPrompt.prompt();
 
-    await deferredPrompt.userChoice;
+    const choice =
+      await deferredPrompt.userChoice;
+
+    if (
+      choice.outcome ===
+      "accepted"
+    ) {
+      setInstalled(true);
+    }
 
     setDeferredPrompt(
       null
@@ -156,23 +175,17 @@ export function InstallPrompt() {
               Installer ASDRO Tennis
             </p>
 
-            {isIOS ? (
-              <p className="mt-1 text-sm leading-6 text-white/50">
-                Ajoutez l&apos;application à votre écran d&apos;accueil pour y accéder plus rapidement.
-              </p>
-            ) : (
-              <p className="mt-1 text-sm leading-6 text-white/50">
-                Installez l&apos;application sur votre appareil pour un accès rapide.
-              </p>
-            )}
+            <p className="mt-1 text-sm leading-6 text-white/50">
+              {isIOS
+                ? "Ajoutez l'application à votre écran d'accueil pour y accéder plus rapidement."
+                : "Installez l'application sur votre appareil pour un accès rapide."}
+            </p>
           </div>
 
           <button
             type="button"
             onClick={() =>
-              setDismissed(
-                true
-              )
+              setDismissed(true)
             }
             aria-label="Fermer"
             className="rounded-lg p-2 text-white/40 transition hover:bg-white/5 hover:text-white"
