@@ -1,26 +1,178 @@
 @import "tailwindcss";
 
 :root {
-	--background: #ffffff;
-	--foreground: #171717;
+  --background: #07110c;
+  --background-soft: #0c1811;
+  --surface: #101e16;
+  --surface-hover: #15271c;
+
+  --foreground: #f5f7f5;
+  --muted: #9baaa0;
+
+  --border: rgba(255, 255, 255, 0.1);
+  --border-hover: rgba(255, 255, 255, 0.2);
+
+  --primary: #b8f536;
+  --primary-hover: #a8e62b;
+  --primary-foreground: #0b120c;
+
+  --danger: #ff6464;
+  --success: #65d68a;
 }
 
-@theme inline {
-	--color-background: var(--background);
-	--color-foreground: var(--foreground);
-	--font-sans: var(--font-geist-sans);
-	--font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		--background: #0a0a0a;
-		--foreground: #ededed;
-	}
+html {
+  background: var(--background);
 }
 
 body {
-	background: var(--background);
-	color: var(--foreground);
-	font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(184, 245, 54, 0.07),
+      transparent 30rem
+    ),
+    var(--background);
+
+  color: var(--foreground);
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+input[type="date"],
+input[type="time"] {
+  color-scheme: dark;
+}
+
+/* ============================================================
+   UTILITAIRES ASDRO
+   ============================================================ */
+
+.asdro-container {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+@media (min-width: 768px) {
+  .asdro-container {
+    padding-inline: 2rem;
+  }
+}
+
+.asdro-card {
+  border: 1px solid var(--border);
+  background: rgba(16, 30, 22, 0.78);
+  backdrop-filter: blur(12px);
+  border-radius: 1.25rem;
+}
+
+.asdro-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: var(--background-soft);
+  color: var(--foreground);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  outline: none;
+
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.asdro-input:focus {
+  border-color: rgba(184, 245, 54, 0.6);
+}
+
+.asdro-input::placeholder {
+  color: var(--muted);
+}
+
+.asdro-button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  min-height: 44px;
+
+  border: 0;
+  border-radius: 0.75rem;
+
+  padding: 0.7rem 1rem;
+
+  background: var(--primary);
+  color: var(--primary-foreground);
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background-color 150ms ease,
+    transform 150ms ease;
+}
+
+.asdro-button-primary:hover {
+  background: var(--primary-hover);
+}
+
+.asdro-button-primary:active {
+  transform: scale(0.98);
+}
+
+.asdro-button-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+
+  min-height: 44px;
+
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+
+  padding: 0.7rem 1rem;
+
+  color: var(--foreground);
+  background: var(--surface);
+
+  font-weight: 600;
+
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.asdro-button-secondary:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-hover);
 }

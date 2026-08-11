@@ -1,4 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
+import {
+  LogIn,
+  MailCheck,
+} from "lucide-react";
 
 import { login } from "./actions";
 
@@ -15,88 +20,157 @@ export default async function LoginPage({
   const params = await searchParams;
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-2xl border p-8">
-        <h1 className="text-3xl font-bold">
-          Connexion
-        </h1>
+    <main className="flex min-h-screen items-center justify-center px-4 py-10">
+      <div className="w-full max-w-md">
+        {/* LOGO / IDENTITÉ */}
 
-        <p className="mt-2 text-sm opacity-70">
-          Accédez à votre espace ASDRO Tennis.
-        </p>
-
-        {params.confirmed === "1" && (
-          <div className="mt-6 rounded-xl border border-green-500 p-4 text-sm text-green-500">
-            <p className="font-semibold">
-              Adresse e-mail confirmée !
-            </p>
-
-            <p className="mt-2">
-              Votre compte est maintenant activé.
-              Vous pouvez vous connecter.
-            </p>
-          </div>
-        )}
-
-        {params.error && (
-          <div className="mt-6 rounded-lg border border-red-500 p-3 text-sm text-red-500">
-            {params.error}
-          </div>
-        )}
-
-        <form action={login} className="mt-8 space-y-5">
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-2 block text-sm font-medium"
-            >
-              Adresse e-mail
-            </label>
-
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              className="w-full rounded-lg border bg-transparent px-4 py-3"
+        <div className="mb-8 text-center">
+          <div className="relative mx-auto h-16 w-16 overflow-hidden rounded-2xl">
+            <Image
+              src="/icons/icon-192.png"
+              alt="ASDRO Tennis"
+              fill
+              sizes="64px"
+              className="object-cover"
+              priority
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-2 block text-sm font-medium"
-            >
-              Mot de passe
-            </label>
+          <h1 className="mt-5 text-3xl font-bold tracking-tight">
+            ASDRO Tennis
+          </h1>
 
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="current-password"
-              className="w-full rounded-lg border bg-transparent px-4 py-3"
-            />
+          <p className="mt-2 text-sm text-white/50">
+            Réservation des terrains du club
+          </p>
+        </div>
+
+        {/* CARTE */}
+
+        <section className="asdro-card p-6 sm:p-8">
+          <div>
+            <p className="text-sm font-medium text-[#b8f536]">
+              Espace adhérent
+            </p>
+
+            <h2 className="mt-2 text-2xl font-bold">
+              Connexion
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-white/50">
+              Connectez-vous pour réserver un terrain
+              et gérer vos créneaux.
+            </p>
           </div>
 
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-black"
-          >
-            Se connecter
-          </button>
-        </form>
+          {/* CONFIRMATION EMAIL */}
 
-        <p className="mt-6 text-center text-sm opacity-70">
-          Pas encore de compte ?{" "}
-          <Link
-            href="/inscription"
-            className="font-semibold underline"
+          {params.confirmed === "1" && (
+            <div className="mt-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+              <div className="flex items-start gap-3">
+                <MailCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
+
+                <div>
+                  <p className="font-semibold text-green-400">
+                    Adresse e-mail confirmée
+                  </p>
+
+                  <p className="mt-1 text-sm leading-6 text-green-200/60">
+                    Votre compte est maintenant activé.
+                    Vous pouvez vous connecter.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ERREUR */}
+
+          {params.error && (
+            <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+              <p className="font-semibold text-red-400">
+                Connexion impossible
+              </p>
+
+              <p className="mt-1 text-sm leading-6 text-red-200/60">
+                {params.error}
+              </p>
+            </div>
+          )}
+
+          {/* FORMULAIRE */}
+
+          <form
+            action={login}
+            className="mt-7 space-y-5"
           >
-            S&apos;inscrire
-          </Link>
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 block text-sm font-medium"
+              >
+                Adresse e-mail
+              </label>
+
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="nom@exemple.fr"
+                className="asdro-input"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="mb-2 block text-sm font-medium"
+              >
+                Mot de passe
+              </label>
+
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+                placeholder="Votre mot de passe"
+                className="asdro-input"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="asdro-button-primary w-full"
+            >
+              <LogIn className="h-4 w-4" />
+              Se connecter
+            </button>
+          </form>
+
+          {/* INSCRIPTION */}
+
+          <div className="mt-7 border-t border-white/10 pt-6 text-center">
+            <p className="text-sm text-white/50">
+              Pas encore de compte ?
+            </p>
+
+            <Link
+              href="/inscription"
+              className="mt-3 inline-flex text-sm font-semibold text-[#b8f536] transition hover:opacity-80"
+            >
+              Créer mon compte adhérent →
+            </Link>
+          </div>
+        </section>
+
+        {/* FOOTER */}
+
+        <p className="mt-6 text-center text-xs text-white/30">
+          Accès réservé aux adhérents ASDRO
         </p>
       </div>
     </main>
