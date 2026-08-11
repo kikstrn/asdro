@@ -3,11 +3,11 @@ import type {
   Viewport,
 } from "next";
 
-import {
-  ServiceWorkerRegister,
-} from "@/components/pwa/service-worker-register";
-
 import "./globals.css";
+
+import {
+  InstallPrompt,
+} from "@/components/pwa/install-prompt";
 
 export const metadata: Metadata = {
   title: {
@@ -76,7 +76,7 @@ export default function RootLayout({
       <body>
         {children}
 
-        <ServiceWorkerRegister />
+        <InstallPrompt />
       </body>
     </html>
   );
