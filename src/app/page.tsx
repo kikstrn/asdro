@@ -352,6 +352,33 @@ export default async function Home({
     );
 
   // ==========================================================
+  // FERMETURES RÉCURRENTES
+  // ==========================================================
+
+  const {
+    data: recurringClosures,
+    error: recurringClosuresError,
+  } = await supabase
+    .from("recurring_closures")
+    .select(
+      `
+      id,
+      court_id,
+      title,
+      starts_on,
+      ends_on,
+      day_of_week,
+      starts_at,
+      ends_at,
+      active
+      `
+    )
+    .eq("active", true)
+    .lte("starts_on", requestedDate)
+    .gte("ends_on", requestedDate)
+    .eq("day_of_week", dayOfWeek);
+
+  // ==========================================================
   // MES RÉSERVATIONS
   // ==========================================================
 
@@ -394,6 +421,7 @@ export default async function Home({
   if (
     bookingsError ||
     closuresError ||
+    recurringClosuresError ||
     myBookingsError
   ) {
     return (
@@ -507,6 +535,42 @@ export default async function Home({
           slot.end &&
           closureEnd >
           slot.start
+        );
+      }
+    );
+  }
+
+  function timeToMinutes(value: string) {
+    const [hours, minutes] =
+      value.slice(0, 5).split(":").map(Number);
+
+    return hours * 60 + minutes;
+  }
+
+  function findRecurringClosure(
+    courtId: string,
+    start: string,
+    end: string
+  ) {
+    const slotStart = timeToMinutes(start);
+    const slotEnd = timeToMinutes(end);
+
+    return recurringClosures?.find(
+      (closure) => {
+        const appliesToCourt =
+          closure.court_id === null ||
+          closure.court_id === courtId;
+
+        const closureStart =
+          timeToMinutes(closure.starts_at);
+
+        const closureEnd =
+          timeToMinutes(closure.ends_at);
+
+        return (
+          appliesToCourt &&
+          slotStart < closureEnd &&
+          slotEnd > closureStart
         );
       }
     );
@@ -733,6 +797,11 @@ export default async function Home({
                             selectedMobileCourt.id,
                             slot.start,
                             slot.end
+                          ) ??
+                          findRecurringClosure(
+                            selectedMobileCourt.id,
+                            slot.start,
+                            slot.end
                           );
 
                         const isMine =
@@ -782,7 +851,7 @@ export default async function Home({
                                   {closure.title}
                                 </p>
 
-                                {closure.reason && (
+                                {"reason" in closure && closure.reason && (
                                   <p className="mt-1 text-sm text-white/45">
                                     {closure.reason}
                                   </p>
@@ -918,6 +987,11 @@ export default async function Home({
 
                             const closure =
                               findClosure(
+                                court.id,
+                                slot.start,
+                                slot.end
+                              ) ??
+                              findRecurringClosure(
                                 court.id,
                                 slot.start,
                                 slot.end

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import {
@@ -7,6 +8,10 @@ import {
 
 import { createClient } from "@/lib/supabase/server";
 import { AppHeader } from "@/components/navigation/app-header";
+
+import {
+  CalendarRange,
+} from "lucide-react";
 
 import {
   formatBookingDate,
@@ -135,7 +140,7 @@ export default async function ClosuresPage({
     );
 
   return (
-    <main className="min-h-screen bg-black text-white">
+    <main className="min-h-screen">
       {/* HEADER */}
 
       <AppHeader
@@ -144,7 +149,17 @@ export default async function ClosuresPage({
         backLabel="Administration"
       />
 
-      <div className="mx-auto max-w-6xl px-5 py-8">
+      <div className="asdro-container py-6 md:py-10">
+        <div className="mb-6 flex justify-end">
+          <Link
+            href="/admin/fermetures/recurrentes"
+            className="asdro-button-secondary"
+          >
+            <CalendarRange className="h-4 w-4" />
+            Créneaux récurrents
+          </Link>
+        </div>
+
         {/* MESSAGES */}
 
         {params.success ===
@@ -195,7 +210,7 @@ export default async function ClosuresPage({
           {/* =============================================== */}
 
           <section>
-            <div className="rounded-2xl border border-white/10 p-6">
+            <div className="asdro-card p-5 md:p-6">
               <h2 className="text-xl font-semibold">
                 Bloquer un créneau
               </h2>
@@ -229,7 +244,7 @@ export default async function ClosuresPage({
                     type="text"
                     required
                     placeholder="Ex : Loto de l'association"
-                    className="w-full rounded-lg border border-white/10 bg-transparent px-4 py-3 outline-none transition focus:border-white/30"
+                    className="asdro-input"
                   />
                 </div>
 
@@ -248,7 +263,7 @@ export default async function ClosuresPage({
                     name="courtId"
                     required
                     defaultValue="ALL"
-                    className="w-full rounded-lg border border-white/10 bg-black px-4 py-3 outline-none"
+                    className="asdro-input"
                   >
                     <option value="ALL">
                       Tous les terrains
@@ -294,7 +309,7 @@ export default async function ClosuresPage({
                     defaultValue={
                       getTodayDateString()
                     }
-                    className="w-full rounded-lg border border-white/10 bg-transparent px-4 py-3"
+                    className="asdro-input"
                   />
                 </div>
 
@@ -314,7 +329,7 @@ export default async function ClosuresPage({
                       name="start"
                       type="time"
                       required
-                      className="w-full rounded-lg border border-white/10 bg-transparent px-4 py-3"
+                      className="asdro-input"
                     />
                   </div>
 
@@ -331,7 +346,7 @@ export default async function ClosuresPage({
                       name="end"
                       type="time"
                       required
-                      className="w-full rounded-lg border border-white/10 bg-transparent px-4 py-3"
+                      className="asdro-input"
                     />
                   </div>
                 </div>
@@ -352,13 +367,13 @@ export default async function ClosuresPage({
                     name="reason"
                     rows={4}
                     placeholder="Facultatif"
-                    className="w-full resize-none rounded-lg border border-white/10 bg-transparent px-4 py-3 outline-none transition focus:border-white/30"
+                    className="asdro-input resize-none"
                   />
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full rounded-lg bg-white px-4 py-3 font-semibold text-black transition hover:bg-white/90"
+                  className="asdro-button-primary w-full"
                 >
                   Bloquer les créneaux
                 </button>
@@ -394,7 +409,7 @@ export default async function ClosuresPage({
               (!closures ||
                 closures.length ===
                 0) && (
-                <div className="mt-5 rounded-2xl border border-white/10 p-8 text-center">
+                <div className="asdro-card mt-5 p-8 text-center">
                   <p className="text-sm text-white/50">
                     Aucune fermeture
                     programmée.
@@ -436,7 +451,7 @@ export default async function ClosuresPage({
                           key={
                             closure.id
                           }
-                          className="rounded-2xl border border-white/10 p-5"
+                          className="asdro-card p-5"
                         >
                           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
                             <div>
