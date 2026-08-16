@@ -1,6 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
+
 import {
+  CalendarCheck,
   CalendarDays,
   LogOut,
   Settings,
@@ -25,6 +27,7 @@ export function AppHeader({
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#07110c]/90 backdrop-blur-xl">
       <div className="asdro-container">
         <div className="flex min-h-16 items-center justify-between gap-4">
+
           {/* LOGO / TITRE */}
 
           <Link
@@ -55,9 +58,12 @@ export function AppHeader({
             </div>
           </Link>
 
+          {/* ================================================= */}
           {/* DESKTOP */}
+          {/* ================================================= */}
 
           <nav className="hidden items-center gap-2 md:flex">
+
             {backHref ? (
               <Link
                 href={backHref}
@@ -75,6 +81,20 @@ export function AppHeader({
               </Link>
             )}
 
+            {/* MES RÉSERVATIONS */}
+
+            {!backHref && (
+              <Link
+                href="/mes-reservations"
+                className="asdro-button-secondary text-sm"
+              >
+                <CalendarCheck className="h-4 w-4" />
+                Mes réservations
+              </Link>
+            )}
+
+            {/* ADMINISTRATION */}
+
             {isAdmin && !backHref && (
               <Link
                 href="/admin"
@@ -85,6 +105,8 @@ export function AppHeader({
               </Link>
             )}
 
+            {/* DÉCONNEXION */}
+
             <form action={logout}>
               <button
                 type="submit"
@@ -94,11 +116,15 @@ export function AppHeader({
                 Déconnexion
               </button>
             </form>
+
           </nav>
 
+          {/* ================================================= */}
           {/* MOBILE */}
+          {/* ================================================= */}
 
           <nav className="flex items-center gap-2 md:hidden">
+
             {/* PLANNING */}
 
             <Link
@@ -109,6 +135,19 @@ export function AppHeader({
             >
               <CalendarDays className="h-5 w-5" />
             </Link>
+
+            {/* MES RÉSERVATIONS */}
+
+            {!backHref && (
+              <Link
+                href="/mes-reservations"
+                aria-label="Mes réservations"
+                title="Mes réservations"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition hover:bg-white/10"
+              >
+                <CalendarCheck className="h-5 w-5" />
+              </Link>
+            )}
 
             {/* ADMINISTRATION */}
 
@@ -124,6 +163,7 @@ export function AppHeader({
             )}
 
             {/* DÉCONNEXION */}
+
             <form action={logout}>
               <button
                 type="submit"
@@ -134,7 +174,9 @@ export function AppHeader({
                 <LogOut className="h-5 w-5" />
               </button>
             </form>
+
           </nav>
+
         </div>
       </div>
     </header>

@@ -3,8 +3,11 @@ import { redirect } from "next/navigation";
 
 import {
   cancelBooking,
-  createBooking,
 } from "@/app/actions/bookings";
+
+import {
+  BookingComposer,
+} from "@/components/booking/booking-composer";
 
 import {
   DatePicker,
@@ -13,8 +16,6 @@ import {
 import { AppHeader } from "@/components/navigation/app-header";
 
 import {
-  formatBookingDate,
-  formatBookingTime,
   getDayOfWeek,
   getFormattedDate,
   getNextDate,
@@ -139,6 +140,27 @@ export default async function Home({
     member.role === "SUPER_ADMIN";
 
   // ==========================================================
+  // ADHÉRENTS DISPONIBLES POUR UNE PARTIE
+  // ==========================================================
+
+  const {
+    data: playableMembers,
+    error: playableMembersError,
+  } = await supabase
+    .from("members")
+    .select(
+      `
+      id,
+      first_name,
+      last_name
+      `
+    )
+    .eq("active", true)
+    .neq("id", member.id)
+    .order("first_name")
+    .order("last_name");
+
+  // ==========================================================
   // TERRAINS
   // ==========================================================
 
@@ -233,7 +255,8 @@ export default async function Home({
   if (
     courtsError ||
     openingHoursError ||
-    settingsError
+    settingsError ||
+    playableMembersError
   ) {
     return (
       <main className="min-h-screen">
@@ -378,51 +401,10 @@ export default async function Home({
     .gte("ends_on", requestedDate)
     .eq("day_of_week", dayOfWeek);
 
-  // ==========================================================
-  // MES RÉSERVATIONS
-  // ==========================================================
-
-  const {
-    data: myBookings,
-    error: myBookingsError,
-  } = await supabase
-    .from("bookings")
-    .select(
-      `
-      id,
-      starts_at,
-      ends_at,
-      status,
-      court_id,
-      courts (
-        name
-      )
-      `
-    )
-    .eq(
-      "member_id",
-      member.id
-    )
-    .eq(
-      "status",
-      "CONFIRMED"
-    )
-    .gt(
-      "ends_at",
-      new Date().toISOString()
-    )
-    .order(
-      "starts_at",
-      {
-        ascending: true,
-      }
-    );
-
   if (
     bookingsError ||
     closuresError ||
-    recurringClosuresError ||
-    myBookingsError
+    recurringClosuresError
   ) {
     return (
       <main className="min-h-screen">
@@ -891,41 +873,17 @@ export default async function Home({
                             )}
 
                             {!closure && !booking && (
-                              <form
-                                action={createBooking}
-                                className="mt-4"
-                              >
-                                <input
-                                  type="hidden"
-                                  name="courtId"
-                                  value={selectedMobileCourt.id}
+                              <div className="mt-4">
+                                <BookingComposer
+                                  courtId={selectedMobileCourt.id}
+                                  courtName={selectedMobileCourt.name}
+                                  date={requestedDate}
+                                  start={slot.start}
+                                  end={slot.end}
+                                  currentMemberName={`${member.first_name} ${member.last_name}`}
+                                  members={playableMembers ?? []}
                                 />
-
-                                <input
-                                  type="hidden"
-                                  name="date"
-                                  value={requestedDate}
-                                />
-
-                                <input
-                                  type="hidden"
-                                  name="start"
-                                  value={slot.start}
-                                />
-
-                                <input
-                                  type="hidden"
-                                  name="end"
-                                  value={slot.end}
-                                />
-
-                                <button
-                                  type="submit"
-                                  className="asdro-button-primary w-full"
-                                >
-                                  Réserver ce créneau
-                                </button>
-                              </form>
+                              </div>
                             )}
                           </article>
                         );
@@ -1069,58 +1027,16 @@ export default async function Home({
                                     )}
                                   </div>
                                 ) : (
-                                  <form
-                                    action={createBooking}
-                                  >
-                                    <input
-                                      type="hidden"
-                                      name="courtId"
-                                      value={
-                                        court.id
-                                      }
-                                    />
-
-                                    <input
-                                      type="hidden"
-                                      name="date"
-                                      value={
-                                        requestedDate
-                                      }
-                                    />
-
-                                    <input
-                                      type="hidden"
-                                      name="start"
-                                      value={
-                                        slot.start
-                                      }
-                                    />
-
-                                    <input
-                                      type="hidden"
-                                      name="end"
-                                      value={
-                                        slot.end
-                                      }
-                                    />
-
-                                    <button
-                                      type="submit"
-                                      className="group flex min-h-24 w-full flex-col justify-center rounded-xl border border-white/10 bg-white/[0.02] p-4 text-left transition hover:border-[#b8f536]/40 hover:bg-[#b8f536]/5"
-                                    >
-                                      <span className="font-semibold transition group-hover:text-[#b8f536]">
-                                        Disponible
-                                      </span>
-
-                                      <span className="mt-1 text-xs text-white/35">
-                                        {slot.start} – {slot.end}
-                                      </span>
-
-                                      <span className="mt-3 text-xs font-semibold text-[#b8f536]">
-                                        Réserver →
-                                      </span>
-                                    </button>
-                                  </form>
+                                  <BookingComposer
+                                    courtId={court.id}
+                                    courtName={court.name}
+                                    date={requestedDate}
+                                    start={slot.start}
+                                    end={slot.end}
+                                    currentMemberName={`${member.first_name} ${member.last_name}`}
+                                    members={playableMembers ?? []}
+                                    compact
+                                  />
                                 )}
                               </div>
                             );
@@ -1132,117 +1048,6 @@ export default async function Home({
                 </div>
               </div>
             </>
-          )}
-        </section>
-
-        {/* ================================================== */}
-        {/* MES RÉSERVATIONS */}
-        {/* ================================================== */}
-
-        <section className="mt-12 pb-12">
-          <div>
-            <p className="text-sm font-medium text-[#b8f536]">
-              Mon espace
-            </p>
-
-            <h2 className="mt-1 text-2xl font-bold">
-              Mes prochaines réservations
-            </h2>
-
-            <p className="mt-2 text-sm text-white/45">
-              Retrouvez et gérez vos créneaux à venir.
-            </p>
-          </div>
-
-          {!myBookings ||
-            myBookings.length === 0 ? (
-            <div className="asdro-card mt-5 p-8 text-center">
-              <p className="font-medium">
-                Aucune réservation à venir
-              </p>
-
-              <p className="mt-2 text-sm text-white/45">
-                Vos prochaines réservations apparaîtront ici.
-              </p>
-            </div>
-          ) : (
-            <div className="mt-5 grid gap-4 lg:grid-cols-2">
-              {myBookings.map(
-                (booking) => {
-                  const start =
-                    new Date(
-                      booking.starts_at
-                    );
-
-                  const end =
-                    new Date(
-                      booking.ends_at
-                    );
-
-                  const courtName =
-                    booking.courts?.[0]?.name ??
-                    "Terrain";
-
-                  return (
-                    <article
-                      key={booking.id}
-                      className="asdro-card p-5 md:p-6"
-                    >
-                      <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#b8f536]">
-                            {courtName}
-                          </p>
-
-                          <h3 className="mt-2 text-lg font-bold capitalize">
-                            {formatBookingDate(
-                              start
-                            )}
-                          </h3>
-
-                          <p className="mt-1 text-sm text-white/50">
-                            {formatBookingTime(
-                              start
-                            )}
-                            {" – "}
-                            {formatBookingTime(
-                              end
-                            )}
-                          </p>
-                        </div>
-
-                        <form
-                          action={cancelBooking}
-                        >
-                          <input
-                            type="hidden"
-                            name="bookingId"
-                            value={
-                              booking.id
-                            }
-                          />
-
-                          <input
-                            type="hidden"
-                            name="returnDate"
-                            value={
-                              requestedDate
-                            }
-                          />
-
-                          <button
-                            type="submit"
-                            className="w-full rounded-xl border border-red-500/25 px-4 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-500/10 sm:w-auto"
-                          >
-                            Annuler
-                          </button>
-                        </form>
-                      </div>
-                    </article>
-                  );
-                }
-              )}
-            </div>
           )}
         </section>
       </div>
