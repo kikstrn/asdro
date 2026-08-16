@@ -1,10 +1,6 @@
 "server-only";
 
 import {
-  createCalendarToken,
-} from "@/lib/booking/calendar-token";
-
-import {
   sendTransactionalEmail,
 } from "@/lib/email/brevo";
 
@@ -22,6 +18,11 @@ type Recipient = {
   name: string;
 };
 
+type NotificationKind =
+  | "created"
+  | "updated"
+  | "cancelled";
+
 function one<T>(
   value:
     | T
@@ -29,9 +30,7 @@ function one<T>(
     | null
     | undefined
 ) {
-  if (
-    Array.isArray(value)
-  ) {
+  if (Array.isArray(value)) {
     return value[0] ?? null;
   }
 
@@ -76,26 +75,57 @@ function escapeHtml(
   value: string
 ) {
   return value
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-    .replaceAll(
-      "'",
-      "&#039;"
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function escapeIcsText(
+  value: string
+) {
+  return value
+    .replace(/\\/g, "\\\\")
+    .replace(/\n/g, "\\n")
+    .replace(/,/g, "\\,")
+    .replace(/;/g, "\\;");
+}
+
+function toIcsUtc(
+  value: string | Date
+) {
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(value);
+
+  return date
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d{3}Z$/, "Z");
+}
+
+function utf8ToBase64(
+  value: string
+) {
+  const bytes =
+    new TextEncoder().encode(
+      value
     );
+
+  let binary = "";
+
+  for (
+    const byte of bytes
+  ) {
+    binary +=
+      String.fromCharCode(
+        byte
+      );
+  }
+
+  return btoa(binary);
 }
 
 function getAppUrl() {
@@ -107,6 +137,40 @@ function getAppUrl() {
     /\/$/,
     ""
   );
+}
+
+function reservationUrl(
+  bookingId: string
+) {
+  const appUrl =
+    getAppUrl();
+
+  return appUrl
+    ? `${appUrl}/mes-reservations/${bookingId}`
+    : null;
+}
+
+function button(
+  href: string,
+  label: string
+) {
+  return `
+    <a
+      href="${escapeHtml(href)}"
+      style="
+        display:inline-block;
+        margin:6px 0;
+        padding:13px 18px;
+        border-radius:12px;
+        background:#18251e;
+        color:#ffffff;
+        font-weight:700;
+        text-decoration:none;
+      "
+    >
+      ${escapeHtml(label)}
+    </a>
+  `;
 }
 
 async function loadSnapshot(
@@ -184,9 +248,7 @@ async function loadSnapshot(
     const name =
       `${owner.first_name} ${owner.last_name}`;
 
-    playerNames.push(
-      name
-    );
+    playerNames.push(name);
 
     if (owner.email) {
       recipients.push({
@@ -215,9 +277,7 @@ async function loadSnapshot(
     const name =
       `${player.first_name} ${player.last_name}`;
 
-    playerNames.push(
-      name
-    );
+    playerNames.push(name);
 
     if (player.email) {
       recipients.push({
@@ -228,107 +288,127 @@ async function loadSnapshot(
     }
   }
 
-  const uniqueRecipients =
-    Array.from(
-      new Map(
-        recipients.map(
-          (recipient) => [
-            recipient.email
-              .toLowerCase(),
-            recipient,
-          ]
-        )
-      ).values()
-    );
-
   return {
     booking,
+
     courtName:
       court?.name ??
       "Terrain ASDRO",
+
     playerNames,
+
     recipients:
-      uniqueRecipients,
+      Array.from(
+        new Map(
+          recipients.map(
+            (recipient) => [
+              recipient.email
+                .toLowerCase(),
+              recipient,
+            ]
+          )
+        ).values()
+      ),
   };
 }
 
-async function calendarUrl(
-  bookingId: string
+type Snapshot =
+  Awaited<
+    ReturnType<
+      typeof loadSnapshot
+    >
+  >;
+
+function createIcsInvitation(
+  snapshot: Snapshot,
+  recipient: Recipient,
+  kind: NotificationKind
 ) {
-  const appUrl =
-    getAppUrl();
+  const matchLabel =
+    snapshot.booking
+      .match_type ===
+    "DOUBLES"
+      ? "Double"
+      : "Simple";
 
-  if (!appUrl) {
-    return null;
-  }
+  const summary =
+    `ASDRO Tennis - ${matchLabel} - ${snapshot.courtName}`;
 
-  const token =
-    await createCalendarToken(
-      bookingId
+  const description = [
+    `Type de partie : ${matchLabel}`,
+    `Terrain : ${snapshot.courtName}`,
+    snapshot.playerNames.length >
+    0
+      ? `Joueurs : ${snapshot.playerNames.join(", ")}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const senderEmail =
+    process.env
+      .BREVO_SENDER_EMAIL ??
+    "";
+
+  const senderName =
+    process.env
+      .BREVO_SENDER_NAME ??
+    "ASDRO Tennis";
+
+  const cancelled =
+    kind ===
+    "cancelled";
+
+  // Un SEQUENCE croissant permet aux clients calendrier
+  // de traiter les modifications/annulations du même UID.
+  const sequence =
+    Math.floor(
+      Date.now() /
+        1000
     );
 
-  return `${appUrl}/api/bookings/${bookingId}/calendar?token=${encodeURIComponent(
-    token
-  )}`;
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//ASDRO Tennis//Reservation//FR",
+    "CALSCALE:GREGORIAN",
+    `METHOD:${cancelled ? "CANCEL" : "REQUEST"}`,
+    "BEGIN:VEVENT",
+    `UID:${snapshot.booking.id}@asdro-tennis`,
+    `DTSTAMP:${toIcsUtc(new Date())}`,
+    `SEQUENCE:${sequence}`,
+    `DTSTART:${toIcsUtc(snapshot.booking.starts_at)}`,
+    `DTEND:${toIcsUtc(snapshot.booking.ends_at)}`,
+    `SUMMARY:${escapeIcsText(summary)}`,
+    `LOCATION:${escapeIcsText(snapshot.courtName)}`,
+    `DESCRIPTION:${escapeIcsText(description)}`,
+    `STATUS:${cancelled ? "CANCELLED" : "CONFIRMED"}`,
+  ];
+
+  if (senderEmail) {
+    lines.push(
+      `ORGANIZER;CN=${escapeIcsText(senderName)}:mailto:${senderEmail}`
+    );
+  }
+
+  lines.push(
+    `ATTENDEE;CN=${escapeIcsText(recipient.name)};RSVP=TRUE:mailto:${recipient.email}`,
+    "END:VEVENT",
+    "END:VCALENDAR",
+    ""
+  );
+
+  return lines.join(
+    "\r\n"
+  );
 }
 
-function reservationUrl(
-  bookingId: string
-) {
-  const appUrl =
-    getAppUrl();
-
-  return appUrl
-    ? `${appUrl}/mes-reservations/${bookingId}`
-    : null;
-}
-
-function button(
-  href: string,
-  label: string,
-  primary = true
-) {
-  const background =
-    primary
-      ? "#b8f536"
-      : "#18251e";
-
-  const color =
-    primary
-      ? "#07110c"
-      : "#ffffff";
-
-  return `
-    <a
-      href="${escapeHtml(
-        href
-      )}"
-      style="
-        display:inline-block;
-        margin:6px 6px 6px 0;
-        padding:13px 18px;
-        border-radius:12px;
-        background:${background};
-        color:${color};
-        font-weight:700;
-        text-decoration:none;
-      "
-    >
-      ${escapeHtml(label)}
-    </a>
-  `;
-}
-
-async function buildHtml(
+function buildHtml(
   bookingId: string,
   title: string,
   intro: string,
-  snapshot:
-    Awaited<
-      ReturnType<
-        typeof loadSnapshot
-      >
-    >
+  snapshot: Snapshot,
+  kind: NotificationKind
 ) {
   const matchLabel =
     snapshot.booking
@@ -355,41 +435,24 @@ async function buildHtml(
         .ends_at
     );
 
-  const calendar =
-    await calendarUrl(
-      bookingId
-    );
-
   const details =
     reservationUrl(
       bookingId
     );
 
-  const actions = [
-    calendar
-      ? button(
-          calendar,
-          "Ajouter au calendrier"
-        )
-      : "",
-    details
-      ? button(
-          details,
-          "Voir la réservation",
-          false
-        )
-      : "",
-  ].join("");
-
   const players =
     snapshot.playerNames
       .map(
         (name) =>
-          `<li style="margin:6px 0;">${escapeHtml(
-            name
-          )}</li>`
+          `<li style="margin:6px 0;">${escapeHtml(name)}</li>`
       )
       .join("");
+
+  const calendarMessage =
+    kind ===
+    "cancelled"
+      ? "L'invitation calendrier jointe informe également votre calendrier de l'annulation."
+      : "Une invitation calendrier est jointe à cet e-mail. Ouvrez-la depuis votre téléphone pour ajouter ou mettre à jour le match dans votre calendrier.";
 
   return `
     <!doctype html>
@@ -410,16 +473,10 @@ async function buildHtml(
             </p>
 
             <div style="border:1px solid rgba(255,255,255,.10);border-radius:16px;background:#07110c;padding:18px;">
-              <p style="margin:0 0 8px;"><strong>${escapeHtml(
-                snapshot.courtName
-              )}</strong></p>
-              <p style="margin:0 0 6px;color:#d7dfda;text-transform:capitalize;">${escapeHtml(
-                date
-              )}</p>
-              <p style="margin:0 0 6px;color:#d7dfda;">${escapeHtml(
-                `${start} – ${end}`
-              )}</p>
-              <p style="margin:0;color:#b8f536;font-weight:700;">${matchLabel}</p>
+              <p style="margin:0 0 8px;"><strong>${escapeHtml(snapshot.courtName)}</strong></p>
+              <p style="margin:0 0 6px;color:#d7dfda;text-transform:capitalize;">${escapeHtml(date)}</p>
+              <p style="margin:0 0 6px;color:#d7dfda;">${escapeHtml(`${start} – ${end}`)}</p>
+              <p style="margin:0;color:#b8f536;font-weight:700;">${escapeHtml(matchLabel)}</p>
             </div>
 
             <div style="margin-top:20px;">
@@ -429,9 +486,15 @@ async function buildHtml(
               </ul>
             </div>
 
+            <div style="margin-top:22px;padding:15px;border-radius:14px;background:rgba(184,245,54,.07);border:1px solid rgba(184,245,54,.18);">
+              <p style="margin:0;color:#dce8df;font-size:14px;line-height:1.6;">
+                📅 ${escapeHtml(calendarMessage)}
+              </p>
+            </div>
+
             ${
-              actions
-                ? `<div style="margin-top:24px;">${actions}</div>`
+              details
+                ? `<div style="margin-top:22px;">${button(details, "Voir la réservation")}</div>`
                 : ""
             }
 
@@ -447,6 +510,8 @@ async function buildHtml(
 
 async function sendToRecipients(
   recipients: Recipient[],
+  snapshot: Snapshot,
+  kind: NotificationKind,
   subject: string,
   htmlContent: string,
   textContent: string,
@@ -455,8 +520,15 @@ async function sendToRecipients(
   const results =
     await Promise.allSettled(
       recipients.map(
-        (recipient) =>
-          sendTransactionalEmail({
+        (recipient) => {
+          const ics =
+            createIcsInvitation(
+              snapshot,
+              recipient,
+              kind
+            );
+
+          return sendTransactionalEmail({
             to: [
               {
                 email:
@@ -465,11 +537,28 @@ async function sendToRecipients(
                   recipient.name,
               },
             ],
+
             subject,
             htmlContent,
             textContent,
             tags: [tag],
-          })
+
+            attachments: [
+              {
+                name:
+                  kind ===
+                  "cancelled"
+                    ? "annulation-asdro.ics"
+                    : "reservation-asdro.ics",
+
+                content:
+                  utf8ToBase64(
+                    ics
+                  ),
+              },
+            ],
+          });
+        }
       )
     );
 
@@ -497,18 +586,21 @@ export async function sendBookingCreatedEmails(
     );
 
   const html =
-    await buildHtml(
+    buildHtml(
       bookingId,
       "Réservation confirmée",
       "Votre réservation de tennis est confirmée.",
-      snapshot
+      snapshot,
+      "created"
     );
 
   await sendToRecipients(
     snapshot.recipients,
+    snapshot,
+    "created",
     "Réservation confirmée — ASDRO Tennis",
     html,
-    "Votre réservation ASDRO Tennis est confirmée.",
+    "Votre réservation ASDRO Tennis est confirmée. Une invitation calendrier est jointe à cet e-mail.",
     "booking-created"
   );
 }
@@ -524,18 +616,21 @@ export async function sendBookingUpdatedEmails(
     );
 
   const html =
-    await buildHtml(
+    buildHtml(
       bookingId,
       "Réservation modifiée",
       "La composition de votre réservation a été mise à jour.",
-      snapshot
+      snapshot,
+      "updated"
     );
 
   await sendToRecipients(
     snapshot.recipients,
+    snapshot,
+    "updated",
     "Réservation modifiée — ASDRO Tennis",
     html,
-    "Votre réservation ASDRO Tennis a été modifiée.",
+    "Votre réservation ASDRO Tennis a été modifiée. Une invitation calendrier mise à jour est jointe à cet e-mail.",
     "booking-updated"
   );
 
@@ -560,12 +655,44 @@ export async function sendBookingUpdatedEmails(
       </html>
     `;
 
-    await sendToRecipients(
-      removedRecipients,
-      "Modification d'une réservation — ASDRO Tennis",
-      removedHtml,
-      "Vous ne faites plus partie des joueurs de cette réservation ASDRO Tennis.",
-      "booking-player-removed"
+    const results =
+      await Promise.allSettled(
+        removedRecipients.map(
+          (recipient) =>
+            sendTransactionalEmail({
+              to: [
+                {
+                  email:
+                    recipient.email,
+                  name:
+                    recipient.name,
+                },
+              ],
+              subject:
+                "Modification d'une réservation — ASDRO Tennis",
+              htmlContent:
+                removedHtml,
+              textContent:
+                "Vous ne faites plus partie des joueurs de cette réservation ASDRO Tennis.",
+              tags: [
+                "booking-player-removed",
+              ],
+            })
+        )
+      );
+
+    results.forEach(
+      (result) => {
+        if (
+          result.status ===
+          "rejected"
+        ) {
+          console.error(
+            "Erreur e-mail joueur retiré :",
+            result.reason
+          );
+        }
+      }
     );
   }
 }
@@ -579,18 +706,21 @@ export async function sendBookingCancelledEmails(
     );
 
   const html =
-    await buildHtml(
+    buildHtml(
       bookingId,
       "Réservation annulée",
       "Cette réservation a été annulée par son organisateur.",
-      snapshot
+      snapshot,
+      "cancelled"
     );
 
   await sendToRecipients(
     snapshot.recipients,
+    snapshot,
+    "cancelled",
     "Réservation annulée — ASDRO Tennis",
     html,
-    "Votre réservation ASDRO Tennis a été annulée.",
+    "Votre réservation ASDRO Tennis a été annulée. Une invitation calendrier d'annulation est jointe à cet e-mail.",
     "booking-cancelled"
   );
 }

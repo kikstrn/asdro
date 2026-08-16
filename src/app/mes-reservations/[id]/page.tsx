@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 
 import {
   CalendarDays,
-  CalendarPlus,
   Clock3,
   MapPin,
   Pencil,
@@ -21,10 +20,6 @@ import {
   formatBookingDate,
   formatBookingTime,
 } from "@/lib/booking/date";
-
-import {
-  buildGoogleCalendarUrl,
-} from "@/lib/booking/google-calendar";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -195,64 +190,6 @@ export default async function BookingDetailsPage({
     member.role ===
       "SUPER_ADMIN";
 
-  const playerNames: string[] = [];
-
-  if (owner) {
-    playerNames.push(
-      `${owner.first_name} ${owner.last_name}`
-    );
-  }
-
-  for (
-    const participant
-    of participants
-  ) {
-    const player =
-      Array.isArray(
-        participant.members
-      )
-        ? participant
-            .members[0]
-        : participant
-            .members;
-
-    if (player) {
-      playerNames.push(
-        `${player.first_name} ${player.last_name}`
-      );
-    }
-  }
-
-  const matchLabel =
-    booking.match_type ===
-    "DOUBLES"
-      ? "Double"
-      : "Simple";
-
-  const googleCalendarUrl =
-    buildGoogleCalendarUrl({
-      title:
-        `ASDRO Tennis - ${matchLabel} - ${court?.name ?? "Terrain"}`,
-
-      startsAt:
-        booking.starts_at,
-
-      endsAt:
-        booking.ends_at,
-
-      location:
-        court?.name ??
-        "ASDRO Tennis",
-
-      description: [
-        `Type de partie : ${matchLabel}`,
-        playerNames.length > 0
-          ? `Joueurs : ${playerNames.join(", ")}`
-          : "",
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    });
 
   return (
     <main className="min-h-screen">
@@ -480,49 +417,6 @@ export default async function BookingDetailsPage({
               }
             )}
           </div>
-        </section>
-
-        <section className="asdro-card mt-6 p-5 md:p-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <CalendarPlus className="h-5 w-5 text-[#b8f536]" />
-
-              <h2 className="text-xl font-semibold">
-                Ajouter au calendrier
-              </h2>
-            </div>
-
-            <p className="mt-2 text-sm leading-6 text-white/45">
-              Choisissez votre calendrier. Les informations du match
-              seront déjà préremplies.
-            </p>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <a
-              href={`/api/bookings/${booking.id}/calendar`}
-              className="asdro-button-secondary w-full"
-            >
-              <CalendarPlus className="h-4 w-4" />
-              Apple / iPhone
-            </a>
-
-            <a
-              href={googleCalendarUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="asdro-button-primary w-full"
-            >
-              <CalendarPlus className="h-4 w-4" />
-              Google Agenda
-            </a>
-          </div>
-
-          <p className="mt-3 text-xs leading-5 text-white/30">
-            Sur Google Agenda, l&apos;événement s&apos;ouvre directement
-            prérempli. Sur iPhone, le bouton Apple utilise le fichier
-            calendrier de la réservation.
-          </p>
         </section>
 
         <section className="mt-6 pb-12">
