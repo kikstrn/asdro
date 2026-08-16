@@ -8,6 +8,7 @@ import {
 } from "@/lib/booking/booking-notifications";
 
 import { createClient } from "@/lib/supabase/server";
+import { syncBookingToCopintes } from "@/lib/copintes/sync-booking";
 
 export async function cancelBookingFromDetails(
   formData: FormData
@@ -152,6 +153,17 @@ export async function cancelBookingFromDetails(
     console.error(
       "Réservation annulée mais e-mail non envoyé :",
       emailError
+    );
+  }
+
+  try {
+    await syncBookingToCopintes(
+      bookingId
+    );
+  } catch (syncError) {
+    console.error(
+      "Réservation annulée mais synchronisation Les Co'Pintes échouée :",
+      syncError
     );
   }
 

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { syncBookingToCopintes } from "@/lib/copintes/sync-booking";
 
 // ============================================================
 // URL
@@ -248,6 +249,17 @@ export async function cancelBookingByAdmin(
   // ----------------------------------------------------------
   // RAFRAÎCHISSEMENT
   // ----------------------------------------------------------
+
+  try {
+    await syncBookingToCopintes(
+      bookingId
+    );
+  } catch (syncError) {
+    console.error(
+      "Réservation annulée par l'administration mais synchronisation Les Co'Pintes échouée :",
+      syncError
+    );
+  }
 
   revalidatePath("/");
   revalidatePath(

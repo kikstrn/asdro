@@ -13,6 +13,7 @@ import {
 } from "@/lib/booking/date";
 
 import { createClient } from "@/lib/supabase/server";
+import { syncBookingToCopintes } from "@/lib/copintes/sync-booking";
 
 function planningUrl(
   date: string,
@@ -227,6 +228,17 @@ export async function createBookingWithParticipants(
       console.error(
         "Réservation créée mais e-mail non envoyé :",
         emailError
+      );
+    }
+
+    try {
+      await syncBookingToCopintes(
+        String(bookingId)
+      );
+    } catch (syncError) {
+      console.error(
+        "Réservation créée mais synchronisation Les Co'Pintes échouée :",
+        syncError
       );
     }
   }

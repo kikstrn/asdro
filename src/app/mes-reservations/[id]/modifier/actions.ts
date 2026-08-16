@@ -9,6 +9,7 @@ import {
 } from "@/lib/booking/booking-notifications";
 
 import { createClient } from "@/lib/supabase/server";
+import { syncBookingToCopintes } from "@/lib/copintes/sync-booking";
 
 function one<T>(
   value:
@@ -227,6 +228,17 @@ export async function updateBookingParticipants(
     console.error(
       "Réservation modifiée mais e-mail non envoyé :",
       emailError
+    );
+  }
+
+  try {
+    await syncBookingToCopintes(
+      bookingId
+    );
+  } catch (syncError) {
+    console.error(
+      "Réservation modifiée mais synchronisation Les Co'Pintes échouée :",
+      syncError
     );
   }
 
