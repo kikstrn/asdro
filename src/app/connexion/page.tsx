@@ -1,11 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
+
 import {
   LogIn,
   MailCheck,
 } from "lucide-react";
 
 import { login } from "./actions";
+
+import {
+  ForgotPasswordModal,
+} from "@/components/auth/forgot-password-modal";
 
 import {
   PasswordInput,
@@ -15,13 +20,16 @@ type PageProps = {
   searchParams: Promise<{
     error?: string;
     confirmed?: string;
+    passwordReset?: string;
+    authError?: string;
   }>;
 };
 
 export default async function LoginPage({
   searchParams,
 }: PageProps) {
-  const params = await searchParams;
+  const params =
+    await searchParams;
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
@@ -88,7 +96,42 @@ export default async function LoginPage({
             </div>
           )}
 
-          {/* ERREUR */}
+          {/* MOT DE PASSE RÉINITIALISÉ */}
+
+          {params.passwordReset === "1" && (
+            <div className="mt-6 rounded-xl border border-green-500/30 bg-green-500/10 p-4">
+              <div className="flex items-start gap-3">
+                <MailCheck className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
+
+                <div>
+                  <p className="font-semibold text-green-400">
+                    Mot de passe modifié
+                  </p>
+
+                  <p className="mt-1 text-sm leading-6 text-green-200/60">
+                    Votre nouveau mot de passe a bien été enregistré.
+                    Vous pouvez maintenant vous connecter.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ERREUR AUTH / LIEN EXPIRÉ */}
+
+          {params.authError && (
+            <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
+              <p className="font-semibold text-red-400">
+                Lien invalide
+              </p>
+
+              <p className="mt-1 text-sm leading-6 text-red-200/60">
+                {params.authError}
+              </p>
+            </div>
+          )}
+
+          {/* ERREUR CONNEXION */}
 
           {params.error && (
             <div className="mt-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
@@ -128,12 +171,16 @@ export default async function LoginPage({
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="mb-2 block text-sm font-medium"
-              >
-                Mot de passe
-              </label>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium"
+                >
+                  Mot de passe
+                </label>
+
+                <ForgotPasswordModal />
+              </div>
 
               <PasswordInput
                 autoComplete="current-password"

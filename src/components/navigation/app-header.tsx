@@ -6,9 +6,16 @@ import {
   CalendarDays,
   LogOut,
   Settings,
+  UserRound,
 } from "lucide-react";
 
-import { logout } from "@/app/actions/auth";
+import {
+  logout,
+} from "@/app/actions/auth";
+
+import {
+  MobileMenu,
+} from "@/components/navigation/mobile-menu";
 
 type AppHeaderProps = {
   firstName?: string;
@@ -27,9 +34,6 @@ export function AppHeader({
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#07110c]/90 backdrop-blur-xl">
       <div className="asdro-container">
         <div className="flex min-h-16 items-center justify-between gap-4">
-
-          {/* LOGO / TITRE */}
-
           <Link
             href="/"
             className="flex min-w-0 items-center gap-3"
@@ -58,12 +62,9 @@ export function AppHeader({
             </div>
           </Link>
 
-          {/* ================================================= */}
           {/* DESKTOP */}
-          {/* ================================================= */}
 
           <nav className="hidden items-center gap-2 md:flex">
-
             {backHref ? (
               <Link
                 href={backHref}
@@ -81,8 +82,6 @@ export function AppHeader({
               </Link>
             )}
 
-            {/* MES RÉSERVATIONS */}
-
             {!backHref && (
               <Link
                 href="/mes-reservations"
@@ -93,21 +92,30 @@ export function AppHeader({
               </Link>
             )}
 
-            {/* ADMINISTRATION */}
-
-            {isAdmin && !backHref && (
+            {!backHref && (
               <Link
-                href="/admin"
+                href="/mon-compte"
                 className="asdro-button-secondary text-sm"
               >
-                <Settings className="h-4 w-4" />
-                Administration
+                <UserRound className="h-4 w-4" />
+                Mon compte
               </Link>
             )}
 
-            {/* DÉCONNEXION */}
+            {isAdmin &&
+              !backHref && (
+                <Link
+                  href="/admin"
+                  className="asdro-button-secondary text-sm"
+                >
+                  <Settings className="h-4 w-4" />
+                  Administration
+                </Link>
+              )}
 
-            <form action={logout}>
+            <form
+              action={logout}
+            >
               <button
                 type="submit"
                 className="asdro-button-secondary text-sm"
@@ -116,67 +124,15 @@ export function AppHeader({
                 Déconnexion
               </button>
             </form>
-
           </nav>
 
-          {/* ================================================= */}
           {/* MOBILE */}
-          {/* ================================================= */}
 
-          <nav className="flex items-center gap-2 md:hidden">
-
-            {/* PLANNING */}
-
-            <Link
-              href="/"
-              aria-label="Planning"
-              title="Planning"
-              className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition hover:bg-white/10"
-            >
-              <CalendarDays className="h-5 w-5" />
-            </Link>
-
-            {/* MES RÉSERVATIONS */}
-
-            {!backHref && (
-              <Link
-                href="/mes-reservations"
-                aria-label="Mes réservations"
-                title="Mes réservations"
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition hover:bg-white/10"
-              >
-                <CalendarCheck className="h-5 w-5" />
-              </Link>
-            )}
-
-            {/* ADMINISTRATION */}
-
-            {isAdmin && !backHref && (
-              <Link
-                href="/admin"
-                aria-label="Administration"
-                title="Administration"
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 transition hover:bg-white/10"
-              >
-                <Settings className="h-5 w-5" />
-              </Link>
-            )}
-
-            {/* DÉCONNEXION */}
-
-            <form action={logout}>
-              <button
-                type="submit"
-                aria-label="Déconnexion"
-                title="Déconnexion"
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white/70 transition hover:bg-red-500/10 hover:text-red-400"
-              >
-                <LogOut className="h-5 w-5" />
-              </button>
-            </form>
-
-          </nav>
-
+          <MobileMenu
+            isAdmin={isAdmin}
+            backHref={backHref}
+            backLabel={backLabel}
+          />
         </div>
       </div>
     </header>

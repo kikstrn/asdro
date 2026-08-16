@@ -3,6 +3,7 @@
 import {
   useEffect,
   useState,
+  useSyncExternalStore,
 } from "react";
 
 import {
@@ -12,18 +13,34 @@ import {
   X,
 } from "lucide-react";
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
+type BeforeInstallPromptEvent =
+  Event & {
+    prompt: () => Promise<void>;
 
-  userChoice: Promise<{
-    outcome:
-      | "accepted"
-      | "dismissed";
-  }>;
-};
+    userChoice: Promise<{
+      outcome:
+        | "accepted"
+        | "dismissed";
+    }>;
+  };
+
+function subscribeToHydration() {
+  return () => {};
+}
+
+function useIsHydrated() {
+  return useSyncExternalStore(
+    subscribeToHydration,
+    () => true,
+    () => false
+  );
+}
 
 function detectStandalone() {
-  if (typeof window === "undefined") {
+  if (
+    typeof window ===
+    "undefined"
+  ) {
     return false;
   }
 
@@ -57,6 +74,9 @@ function detectIOS() {
 }
 
 export function InstallPrompt() {
+  const hydrated =
+    useIsHydrated();
+
   const [
     deferredPrompt,
     setDeferredPrompt,
@@ -76,11 +96,15 @@ export function InstallPrompt() {
   ] = useState(false);
 
   const isIOS =
-    detectIOS();
+    hydrated
+      ? detectIOS()
+      : false;
 
   const isStandalone =
-    detectStandalone() ||
-    installed;
+    hydrated
+      ? detectStandalone() ||
+        installed
+      : false;
 
   useEffect(() => {
     function handleBeforeInstallPrompt(
@@ -146,6 +170,10 @@ export function InstallPrompt() {
     setDeferredPrompt(
       null
     );
+  }
+
+  if (!hydrated) {
+    return null;
   }
 
   if (
